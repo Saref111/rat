@@ -1,5 +1,3 @@
-use crate::Cli;
-
 pub struct ProcessingArgs {
     pub show_nonprinting: bool,
     pub squeeze_blank: bool,
@@ -8,6 +6,15 @@ pub struct ProcessingArgs {
     pub show_ends: bool,
     pub show_tabs: bool,
 }
+
+
+impl Clone for ProcessingArgs {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl Copy for ProcessingArgs {}
 
 pub fn process(file_string: String, args: ProcessingArgs) -> Vec<String> {
     let mut lines: Vec<String> = file_string.lines().map(|s| s.to_owned()).collect();
