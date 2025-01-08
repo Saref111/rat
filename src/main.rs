@@ -1,5 +1,9 @@
+mod process;
 use std::{fs::File, io::Read, path::PathBuf};
-
+use process::{
+    enumerate_lines,
+    suppress_empty_lines,
+};
 use clap::Parser;
 
 #[derive(Parser)]
@@ -22,7 +26,7 @@ struct Cli {
 
     ///display $ at end of each line
     #[arg(short = 'E', long)]
-    show_ends: bool,
+    show_ends: bool, // done
 
     ///number all output lines
     #[arg(short, long)]
@@ -30,7 +34,7 @@ struct Cli {
 
     ///suppress repeated empty output lines
     #[arg(short, long)]
-    squeeze_blank: bool,
+    squeeze_blank: bool, // done
 
     ///equivalent to -vT
     #[arg(short)]
@@ -67,6 +71,10 @@ fn from_file(filename: &PathBuf, cli: &Cli) {
 
     let mut lines: Vec<String> = file_string.lines().map(|s| s.to_owned()).collect();
 
+    if cli.squeeze_blank {
+        lines = suppress_empty_lines(lines);
+    }
+
     if cli.number || cli.number_nonblank {
         lines = enumerate_lines(lines, cli.number_nonblank);
     }
@@ -84,20 +92,3 @@ fn from_std_input(cli: Cli) {
     todo!()
 }
 
-fn enumerate_lines(lines: Vec<String>, number_nonblank: bool) -> Vec<String> {
-    let mut new_vec = Vec::new();
-    let mut count = 0;
-    for line in  lines {
-        if line.is_empty() {
-            new_vec.push(if number_nonblank { line } else {
-                count.to_string() + ": " + &line
-            });
-        } else {
-            new_vec.push(count.to_string() + ": " + &line);
-        }
-
-        count += 1;
-    }
-
-    new_vec
-}
