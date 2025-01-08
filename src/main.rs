@@ -1,12 +1,12 @@
-use std::path::PathBuf;
+use std::{fs::File, io::{BufReader, Read}, path::PathBuf};
 
 use clap::Parser;
 
 #[derive(Parser)]
 #[command(name = "Rat")]
-#[command(version, about, long_about = None)]
+#[command(version, about = "Naive implementation of cat CLI command in Rust", long_about = None)]
 struct Cli {
-    file: Option<String>,
+    file: Option<PathBuf>,
 
     ///equivalent to -vET
     #[arg(short = 'a', long)]
@@ -48,7 +48,26 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
 
-    if cli.show_all {
-        println!("show all");
-    }
+    match &cli.file {
+        Some(filename) => from_file(filename, &cli),
+        None => from_std_input(cli),
+    } 
+}
+
+fn from_file(filename: &PathBuf, cli: &Cli) {
+    let Ok(mut file_content) = File::open(filename) else {
+        panic!("rat: {}: No such file or directory", filename.to_string_lossy());
+    };
+
+    let mut file_string = String::new();
+
+    let Ok(_) = file_content.read_to_string(&mut file_string) else {
+        panic!("rat: {}: Cannot read the file", filename.to_string_lossy());
+    };
+
+    println!("{file_string}");
+}
+
+fn from_std_input(cli: Cli) {
+    todo!()
 }
