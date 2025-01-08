@@ -20,7 +20,7 @@ struct Cli {
     #[arg(short)]
     e: bool,
 
-    ///equivalent to -vE
+    ///display $ at end of each line
     #[arg(short = 'E', long)]
     show_ends: bool,
 
@@ -69,6 +69,10 @@ fn from_file(filename: &PathBuf, cli: &Cli) {
 
     if cli.number || cli.number_nonblank {
         lines = enumerate_lines(lines, cli.number_nonblank);
+    }
+
+    if cli.show_ends {
+        lines = lines.into_iter().map(|l| l + "$").collect();
     }
 
     for line in lines {
