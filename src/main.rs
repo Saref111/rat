@@ -1,9 +1,6 @@
 mod process;
 use std::{fs::File, io::Read, path::PathBuf};
-use process::{
-    enumerate_lines,
-    suppress_empty_lines,
-};
+use process::{process, ProcessingArgs};
 use clap::Parser;
 
 #[derive(Parser)]
@@ -42,7 +39,7 @@ struct Cli {
 
     ///display TAB characters as ^I
     #[arg(short = 'T', long)]
-    show_tabs: bool,
+    show_tabs: bool, //done
 
     ///use ^ and M- notation, except for LFD and TAB
     #[arg(short = 'v', long)]
@@ -69,19 +66,14 @@ fn from_file(filename: &PathBuf, cli: &Cli) {
         panic!("rat: {}: Cannot read the file", filename.to_string_lossy());
     };
 
-    let mut lines: Vec<String> = file_string.lines().map(|s| s.to_owned()).collect();
-
-    if cli.squeeze_blank {
-        lines = suppress_empty_lines(lines);
-    }
-
-    if cli.number || cli.number_nonblank {
-        lines = enumerate_lines(lines, cli.number_nonblank);
-    }
-
-    if cli.show_ends {
-        lines = lines.into_iter().map(|l| l + "$").collect();
-    }
+    let lines = process(file_string, ProcessingArgs {
+        show_nonprinting: cli.show_nonprinting || cli.t || cli.show_all || cli.e,
+        squeeze_blank: cli.squeeze_blank,
+        number: cli.number,
+        number_nonblank: cli.number_nonblank,
+        show_ends: cli.show_ends || cli.e || cli.show_all,
+        show_tabs: cli.show_tabs || cli.show_all,
+    });
 
     for line in lines {
         println!("{line}");
