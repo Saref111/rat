@@ -1,4 +1,4 @@
-use std::{fs::File, io::{BufReader, Read}, path::PathBuf};
+use std::{fs::File, io::Read, path::PathBuf};
 
 use clap::Parser;
 
@@ -6,7 +6,7 @@ use clap::Parser;
 #[command(name = "Rat")]
 #[command(version, about = "Naive implementation of cat CLI command in Rust", long_about = None)]
 struct Cli {
-    file: Option<PathBuf>,
+    file: Option<PathBuf>, // done
 
     ///equivalent to -vET
     #[arg(short = 'a', long)]
@@ -14,7 +14,7 @@ struct Cli {
 
     ///number nonempty output lines, overrides -n
     #[arg(short = 'b', long)]
-    number_nonblank: bool,
+    number_nonblank: bool, // done
 
     ///equivalent to -vE
     #[arg(short)]
@@ -26,7 +26,7 @@ struct Cli {
 
     ///number all output lines
     #[arg(short, long)]
-    number: bool,
+    number: bool, // done
 
     ///suppress repeated empty output lines
     #[arg(short, long)]
@@ -65,9 +65,35 @@ fn from_file(filename: &PathBuf, cli: &Cli) {
         panic!("rat: {}: Cannot read the file", filename.to_string_lossy());
     };
 
-    println!("{file_string}");
+    let mut lines: Vec<String> = file_string.lines().map(|s| s.to_owned()).collect();
+
+    if cli.number || cli.number_nonblank {
+        lines = enumerate_lines(lines, cli.number_nonblank);
+    }
+
+    for line in lines {
+        println!("{line}");
+    }
 }
 
 fn from_std_input(cli: Cli) {
     todo!()
+}
+
+fn enumerate_lines(lines: Vec<String>, number_nonblank: bool) -> Vec<String> {
+    let mut new_vec = Vec::new();
+    let mut count = 0;
+    for line in  lines {
+        if line.is_empty() {
+            new_vec.push(if number_nonblank { line } else {
+                count.to_string() + ": " + &line
+            });
+        } else {
+            new_vec.push(count.to_string() + ": " + &line);
+        }
+
+        count += 1;
+    }
+
+    new_vec
 }
