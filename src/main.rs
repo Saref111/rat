@@ -7,7 +7,7 @@ use clap::Parser;
 #[command(name = "Rat")]
 #[command(version, about = "Naive implementation of cat CLI command in Rust", long_about = None)]
 struct Cli {
-    file: Option<PathBuf>, 
+    files: Option<Vec<String>>, 
 
     ///equivalent to -vET
     #[arg(short = 'a', long)]
@@ -57,21 +57,27 @@ fn main() {
         show_tabs: cli.show_tabs || cli.show_all,
     };
 
-    match &cli.file {
-        Some(filename) => from_file(filename, args),
+    match &cli.files {
+        Some(files) => files.into_iter().for_each(|filename| {
+            if filename == "-" {
+                from_std_input(args)
+            } else {
+                from_file(filename.to_string(), args)
+            }
+        }),
         None => from_std_input(args),
     } 
 }
 
-fn from_file(filename: &PathBuf, args: ProcessingArgs) {
-    let Ok(mut file_content) = File::open(filename) else {
-        panic!("rat: {}: No such file", filename.to_string_lossy());
+fn from_file(filename: String, args: ProcessingArgs) {
+    let Ok(mut file_content) = File::open(&filename) else {
+        panic!("rat: {}: No such file", &filename);
     };
 
     let mut file_string = String::new();
 
     let Ok(_) = file_content.read_to_string(&mut file_string) else {
-        panic!("rat: {}: Cannot read the file", filename.to_string_lossy());
+        panic!("rat: {}: Cannot read the file", &filename);
     };
 
     let lines = process(file_string, args);
@@ -82,14 +88,18 @@ fn from_file(filename: &PathBuf, args: ProcessingArgs) {
 fn from_std_input(args: ProcessingArgs) {
     
     loop {
-        let local_args = &args;
         let mut input = String::new();
-        std::io::stdin()
-        .read_line(&mut input)
-        .expect("rat: Failed to read line");
-    
-        let lines = process(input, *local_args);
-    
+
+        let bytes = std::io::stdin()
+            .read_line(&mut input)
+            .expect("rat: Failed to read line");
+
+        let lines = process(input, args);
+        
+        if bytes == 0 {
+            break;
+        }
+
         print_lines(lines);
     }
 }
