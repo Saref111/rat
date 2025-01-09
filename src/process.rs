@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub struct ProcessingArgs {
     pub show_nonprinting: bool,
     pub squeeze_blank: bool,
@@ -6,15 +7,6 @@ pub struct ProcessingArgs {
     pub show_ends: bool,
     pub show_tabs: bool,
 }
-
-
-impl Clone for ProcessingArgs {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl Copy for ProcessingArgs {}
 
 pub fn process(file_string: String, args: ProcessingArgs) -> Vec<String> {
     let mut lines: Vec<String> = file_string.lines().map(|s| s.to_owned()).collect();
@@ -43,7 +35,7 @@ pub fn process(file_string: String, args: ProcessingArgs) -> Vec<String> {
 }
 
 fn show_nonprinting(lines: Vec<String>) -> Vec<String> {
-    lines.iter().map(|line| line.chars()
+    lines.into_iter().map(|line| line.chars()
         .map(|c| match c {
             // Printable ASCII (32-126) or whitespace characters (like '\n', '\t') remain unchanged
             ' '..='~' | '\n' | '\t' => c.to_string(),
@@ -61,39 +53,28 @@ fn show_nonprinting(lines: Vec<String>) -> Vec<String> {
 }
 
 fn enumerate_lines(lines: Vec<String>, number_nonblank: bool) -> Vec<String> {
-    let mut new_vec = Vec::new();
-    let mut count = 0;
-    for line in  lines {
-        if line.is_empty() {
-            new_vec.push(if number_nonblank { line } else {
-                count.to_string() + ": " + &line
-            });
-        } else {
-            new_vec.push(count.to_string() + ": " + &line);
-        }
+    let mut count = 0; 
 
-        count += 1;
-    }
-
-    new_vec
+    lines
+        .into_iter()
+        .map(|line| {
+            if !line.is_empty() || !number_nonblank {
+                count += 1;
+                format!("{count}: {line}")
+            } else {
+                line
+            }
+        })
+        .collect()
 }
 
 fn suppress_empty_lines(lines: Vec<String>) -> Vec<String> {
-    lines.iter().enumerate().fold(vec![], |mut acc, (i, l)| {
-        if i == 0 {
-            acc.push(l.to_owned());
-            return acc;
+    lines
+    .into_iter()
+    .fold(Vec::new(), |mut acc, line| {
+        if !(line.is_empty() && acc.last().map(|l| l.is_empty()).unwrap_or(false)) {
+            acc.push(line);
         }
-
-        match &lines.get(i - 1) {
-            Some(prev_line) => if l.is_empty() && prev_line.is_empty() {} else {
-                acc.push(l.to_owned());
-            },
-            None => {
-                acc.push(l.to_owned());
-            }
-        }
-
         acc
     })
 }

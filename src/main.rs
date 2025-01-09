@@ -1,5 +1,5 @@
 mod process;
-use std::{fs::File, io::Read, path::PathBuf};
+use std::{fs::File, io::Read};
 use process::{process, ProcessingArgs};
 use clap::Parser;
 
@@ -70,15 +70,10 @@ fn main() {
 }
 
 fn from_file(filename: String, args: ProcessingArgs) {
-    let Ok(mut file_content) = File::open(&filename) else {
-        panic!("rat: {}: No such file", &filename);
-    };
-
+    let mut file_content = exit_on_error(File::open(&filename), &filename);
     let mut file_string = String::new();
 
-    let Ok(_) = file_content.read_to_string(&mut file_string) else {
-        panic!("rat: {}: Cannot read the file", &filename);
-    };
+    exit_on_error(file_content.read_to_string(&mut file_string), &filename);
 
     let lines = process(file_string, args);
 
@@ -105,7 +100,12 @@ fn from_std_input(args: ProcessingArgs) {
 }
 
 fn print_lines(lines: Vec<String>) {
-    for line in lines {
-        println!("{line}");
-    }
-}  
+    lines.iter().for_each(|line| println!("{line}"));
+} 
+
+fn exit_on_error<T, E: std::fmt::Display>(result: Result<T, E>, context: &str) -> T {
+    result.unwrap_or_else(|err| {
+        eprintln!("rat: {}: {}", context, err);
+        std::process::exit(1);
+    })
+}
